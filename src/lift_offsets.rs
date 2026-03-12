@@ -3,7 +3,7 @@ use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::collections::HashMap;
 use flate2::read::GzDecoder;
 use rayon::ThreadPoolBuilder;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
 
 fn main() {
     let cpgs_file = std::env::args().nth(1).expect("Missing cpgs file");
@@ -53,7 +53,7 @@ fn main() {
     let nuc_index = &nuc_index;
     let node_lengths = &node_lengths;
 
-    let (tx, rx) = channel::<String>();
+    let (tx, rx) = sync_channel::<String>(10000);
 
     let pool = ThreadPoolBuilder::new().num_threads(cores).build().unwrap();
 

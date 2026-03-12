@@ -3,7 +3,7 @@ use std::io::{BufRead, BufReader, Write, Seek, SeekFrom};
 use std::collections::{HashSet, HashMap};
 use flate2::read::GzDecoder;
 use rayon::ThreadPoolBuilder;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::sync_channel;
 
 fn flip(s: &str) -> &str {
     match s {
@@ -75,7 +75,7 @@ fn main() {
     let node_lengths = &node_lengths;
     let strands_ = &strands_;
 
-    let (tx, rx) = channel::<String>();
+    let (tx, rx) = sync_channel::<String>(10000);
 
     let pool = ThreadPoolBuilder::new().num_threads(cores).build().unwrap();
     pool.scope(|s| {
