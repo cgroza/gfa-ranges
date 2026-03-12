@@ -51,7 +51,7 @@ fn main() {
 
     // Build node_lengths from GFA
     let mut gfa = File::open(&gfa_file).unwrap();
-    let mut reader = BufReader::new(&gfa);
+    let reader = BufReader::new(&gfa);
     let mut node_lengths = HashMap::new();
 
     for line in reader.lines() {
