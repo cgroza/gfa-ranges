@@ -1,0 +1,21 @@
+[package]
+name = "gfa-ranges"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+flate2 = "1.0"
+crossbeam = "0.8"
+
+[[bin]]
+name = "gaftools"
+path = "src/gaftools.rs"
+
+[[bin]]
+name = "lift_edges"
+path = "src/lift_edges.rs"
+
+[[bin]]
+name = "lift_offsets"
+path = "src/lift_offsets.rs"
