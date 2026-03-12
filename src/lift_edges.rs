@@ -75,7 +75,7 @@ fn main() {
     let node_lengths = &node_lengths;
     let strands_ = &strands_;
 
-    let (tx, rx) = sync_channel::<String>(10000);
+    let (tx, rx) = sync_channel::<String>(1000);
 
     let pool = ThreadPoolBuilder::new().num_threads(cores).build().unwrap();
     pool.scope(|s| {
