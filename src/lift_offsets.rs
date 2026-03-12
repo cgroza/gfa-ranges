@@ -2,8 +2,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::collections::HashMap;
 use flate2::read::GzDecoder;
-use rayon::ThreadPoolBuilder;
 use std::sync::mpsc::sync_channel;
+use rayon::prelude::*;
 
 fn main() {
     let cpgs_file = std::env::args().nth(1).expect("Missing cpgs file");
@@ -55,61 +55,56 @@ fn main() {
 
     let (tx, rx) = sync_channel::<String>(1000);
 
-    let pool = ThreadPoolBuilder::new().num_threads(cores).build().unwrap();
+    std::thread::spawn(move || {
+        for line in rx {
+            println!("{}", line);
+        }
+    });
 
-    pool.scope(|s| {
-        s.spawn(move |_| {
-            for line in rx {
-                println!("{}", line);
+    reader.lines()
+        .filter_map(Result::ok)
+        .filter(|l| l.starts_with('P'))
+        .par_bridge()
+        .for_each(|line| {
+            let tx_ = tx.clone();
+            let fields: Vec<&str> = line.trim().split_whitespace().collect();
+            if fields.len() < 4 { return; }
+            let p_name = fields[1];
+            let hap = fields[2];
+            let mut hap_name = p_name.to_string();
+            let mut hap_start = 0usize;
+
+            let hap_seq: Vec<&str> = hap.split(',').collect();
+
+            if p_name.contains('[') {
+                let parts: Vec<&str> = p_name.split('[').collect();
+                hap_name = parts[0].to_string();
+                let start = parts[1].split('-').next().unwrap();
+                hap_start = start.parse::<usize>().unwrap();
+            }
+
+            let mut i = 0usize;
+            for node in hap_seq {
+                let node_name = node[..node.len()-1].parse::<usize>().unwrap();
+                let strand = &node[node.len()-1..];
+
+                if let Some(cpgs) = nuc_index.get(&node_name) {
+                    for cpg in cpgs {
+                        let mut offset = cpg.0;
+                        if strand == "-" {
+                            offset = node_lengths.get(&node_name).unwrap() - offset - 1;
+                        }
+                        tx_.send(format!(
+                            "{}\t{}\t{}\t{}",
+                            hap_name,
+                            hap_start + i + offset,
+                            hap_start + i + offset + 2,
+                            cpg.2
+                        ));
+                    }
+                }
+                i += node_lengths.get(&node_name).unwrap();
             }
         });
-
-        for line in reader.lines() {
-            let tx_ = tx.clone();
-            let line = line.unwrap();
-            if !line.starts_with('P') { continue; }
-
-            s.spawn(move |_| {
-                let fields: Vec<&str> = line.trim().split_whitespace().collect();
-                if fields.len() < 4 { return; }
-                let p_name = fields[1];
-                let hap = fields[2];
-                let mut hap_name = p_name.to_string();
-                let mut hap_start = 0usize;
-
-                let hap_seq: Vec<&str> = hap.split(',').collect();
-
-                if p_name.contains('[') {
-                    let parts: Vec<&str> = p_name.split('[').collect();
-                    hap_name = parts[0].to_string();
-                    let start = parts[1].split('-').next().unwrap();
-                    hap_start = start.parse::<usize>().unwrap();
-                }
-
-                let mut i = 0usize;
-                for node in hap_seq {
-                    let node_name = node[..node.len()-1].parse::<usize>().unwrap();
-                    let strand = &node[node.len()-1..];
-
-                    if let Some(cpgs) = nuc_index.get(&node_name) {
-                        for cpg in cpgs {
-                            let mut offset = cpg.0;
-                            if strand == "-" {
-                                offset = node_lengths.get(&node_name).unwrap() - offset - 1;
-                            }
-                            tx_.send(format!(
-                                "{}\t{}\t{}\t{}",
-                                hap_name,
-                                hap_start + i + offset,
-                                hap_start + i + offset + 2,
-                                cpg.2
-                            ));
-                        }
-                    }
-                    i += node_lengths.get(&node_name).unwrap();
-                }
-            });
-        }
-        drop(tx);
-    });
+    drop(tx);
 }
