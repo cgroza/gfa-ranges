@@ -3,6 +3,7 @@ use std::io::{BufRead, BufReader, Write, Seek, SeekFrom};
 use std::collections::{HashSet, HashMap};
 use flate2::read::GzDecoder;
 use crossbeam::thread;
+use std::sync::mpsc::channel;
 
 fn flip(s: &str) -> &str {
     match s {
@@ -73,8 +74,11 @@ fn main() {
     let node_lengths = &node_lengths;
     let strands_ = &strands_;
 
+    let (tx, rx) = channel::<String>();
+
     thread::scope(|s| {
         for line in reader.lines() {
+            let tx_ = tx.clone();
             let line = line.unwrap();
             if !line.starts_with('P') { continue; }
 
@@ -120,11 +124,19 @@ fn main() {
                         let node_len = *node_lengths.get(&edge.1).unwrap();
                         let start = hap_start + i + node_len - 1;
                         let end = hap_start + i + node_len + 1;
-                        println!("{}\t{}\t{}\t{}", hap_name, start, end, edge_name);
+                        tx_.send(format!("{}\t{}\t{}\t{}", hap_name, start, end, edge_name));
                     }
                     i += *node_lengths.get(&edge.1).unwrap();
                 }
             });
         }
+
+    drop(tx);
+
+    s.spawn(move |_| {
+        for line in rx {
+            println!("{}", line);
+        }
+    });
     }).unwrap();
 }
