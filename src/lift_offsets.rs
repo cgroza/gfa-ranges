@@ -3,6 +3,7 @@ use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::collections::HashMap;
 use flate2::read::GzDecoder;
 use crossbeam::thread;
+use std::sync::mpsc::channel;
 
 fn main() {
     let cpgs_file = std::env::args().nth(1).expect("Missing cpgs file");
@@ -51,8 +52,11 @@ fn main() {
     let nuc_index = &nuc_index;
     let node_lengths = &node_lengths;
 
+    let (tx, rx) = channel::<String>();
+
     thread::scope(|s| {
         for line in reader.lines() {
+            let tx_ = tx.clone();
             let line = line.unwrap();
             if !line.starts_with('P') { continue; }
 
@@ -84,18 +88,25 @@ fn main() {
                             if strand == "-" {
                                 offset = node_lengths.get(&node_name).unwrap() - offset - 1;
                             }
-                            println!(
+                            tx_.send(format!(
                                 "{}\t{}\t{}\t{}",
                                 hap_name,
                                 hap_start + i + offset,
                                 hap_start + i + offset + 2,
                                 cpg.2
-                            );
+                            ));
                         }
                     }
                     i += node_lengths.get(&node_name).unwrap();
                 }
             });
         }
+        drop(tx);
+
+        s.spawn(move |_| {
+            for line in rx {
+                println!("{}", line);
+            }
+        });
     }).unwrap();
 }
