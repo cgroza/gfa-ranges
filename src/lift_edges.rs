@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write, Seek, SeekFrom};
 use std::collections::{HashSet, HashMap};
 use flate2::read::GzDecoder;
-use crossbeam::thread;
+use rayon::ThreadPoolBuilder;
 use std::sync::mpsc::channel;
 
 fn flip(s: &str) -> &str {
@@ -29,6 +29,7 @@ fn main() {
     // Read edge index from gzipped file
     let edge_index_file = std::env::args().nth(1).expect("Missing edge index file");
     let gfa_file = std::env::args().nth(2).expect("Missing GFA file");
+    let cores = std::env::args().nth(3).expect("Missing number of cores").parse::<usize>().unwrap();
 
     let mut edge_index = HashSet::new();
     let gz = GzDecoder::new(File::open(edge_index_file).unwrap());
@@ -76,7 +77,8 @@ fn main() {
 
     let (tx, rx) = channel::<String>();
 
-    thread::scope(|s| {
+    let pool = ThreadPoolBuilder::new().num_threads(cores).build().unwrap();
+    pool.scope(|s| {
         for line in reader.lines() {
             let tx_ = tx.clone();
             let line = line.unwrap();
@@ -138,5 +140,5 @@ fn main() {
             println!("{}", line);
         }
     });
-    }).unwrap();
+    });
 }

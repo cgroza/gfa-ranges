@@ -2,12 +2,13 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::collections::HashMap;
 use flate2::read::GzDecoder;
-use crossbeam::thread;
+use rayon::ThreadPoolBuilder;
 use std::sync::mpsc::channel;
 
 fn main() {
     let cpgs_file = std::env::args().nth(1).expect("Missing cpgs file");
     let gfa_file = std::env::args().nth(2).expect("Missing GFA file");
+    let cores = std::env::args().nth(3).expect("Missing number of cores").parse::<usize>().unwrap();
 
     // Build nuc_index from gzipped cpgs file
     let mut nuc_index: HashMap<usize, Vec<(usize, String, String)>> = HashMap::new();
@@ -54,7 +55,9 @@ fn main() {
 
     let (tx, rx) = channel::<String>();
 
-    thread::scope(|s| {
+    let pool = ThreadPoolBuilder::new().num_threads(cores).build().unwrap();
+
+    pool.scope(|s| {
         for line in reader.lines() {
             let tx_ = tx.clone();
             let line = line.unwrap();
@@ -108,5 +111,5 @@ fn main() {
                 println!("{}", line);
             }
         });
-    }).unwrap();
+    });
 }
