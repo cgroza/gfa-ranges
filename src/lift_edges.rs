@@ -79,6 +79,12 @@ fn main() {
 
     let pool = ThreadPoolBuilder::new().num_threads(cores).build().unwrap();
     pool.scope(|s| {
+        s.spawn(move |_| {
+            for line in rx {
+                println!("{}", line);
+            }
+        });
+
         for line in reader.lines() {
             let tx_ = tx.clone();
             let line = line.unwrap();
@@ -134,11 +140,5 @@ fn main() {
         }
 
     drop(tx);
-
-    s.spawn(move |_| {
-        for line in rx {
-            println!("{}", line);
-        }
-    });
     });
 }
