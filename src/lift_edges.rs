@@ -77,9 +77,6 @@ fn main() {
         for line in reader.lines() {
             let line = line.unwrap();
             if !line.starts_with('P') { continue; }
-            let edge_index = edge_index.clone();
-            let node_lengths = node_lengths.clone();
-            let strands_ = strands_.clone();
 
             s.spawn(move |_| {
                 let fields: Vec<&str> = line.trim().split_whitespace().collect();

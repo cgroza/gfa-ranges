@@ -30,7 +30,7 @@ fn main() {
 
     // Build node_lengths from GFA
     let mut gfa = File::open(&gfa_file).unwrap();
-    let mut reader = BufReader::new(&gfa);
+    let reader = BufReader::new(&gfa);
     let mut node_lengths: HashMap<usize, usize> = HashMap::new();
 
     for line in reader.lines() {
@@ -55,8 +55,6 @@ fn main() {
         for line in reader.lines() {
             let line = line.unwrap();
             if !line.starts_with('P') { continue; }
-            let nuc_index = nuc_index.clone();
-            let node_lengths = node_lengths.clone();
 
             s.spawn(move |_| {
                 let fields: Vec<&str> = line.trim().split_whitespace().collect();
