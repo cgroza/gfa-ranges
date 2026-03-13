@@ -75,7 +75,7 @@ fn main() {
     let node_lengths = &node_lengths;
     let strands_ = &strands_;
 
-    let (tx, rx) = sync_channel::<String>(1000);
+    let (tx, rx) = sync_channel::<String>(10000);
 
     std::thread::spawn(move || {
         for line in rx {

@@ -53,7 +53,7 @@ fn main() {
     let nuc_index = &nuc_index;
     let node_lengths = &node_lengths;
 
-    let (tx, rx) = sync_channel::<String>(1000);
+    let (tx, rx) = sync_channel::<String>(10000);
 
     std::thread::spawn(move || {
         for line in rx {
