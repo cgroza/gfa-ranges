@@ -29,7 +29,6 @@ fn main() {
     // Read edge index from gzipped file
     let edge_index_file = std::env::args().nth(1).expect("Missing edge index file");
     let gfa_file = std::env::args().nth(2).expect("Missing GFA file");
-    let cores = std::env::args().nth(3).expect("Missing number of cores").parse::<usize>().unwrap();
 
     let mut edge_index = HashSet::new();
     let gz = GzDecoder::new(File::open(edge_index_file).unwrap());

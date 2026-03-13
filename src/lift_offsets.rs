@@ -8,7 +8,6 @@ use rayon::prelude::*;
 fn main() {
     let cpgs_file = std::env::args().nth(1).expect("Missing cpgs file");
     let gfa_file = std::env::args().nth(2).expect("Missing GFA file");
-    let cores = std::env::args().nth(3).expect("Missing number of cores").parse::<usize>().unwrap();
 
     // Build nuc_index from gzipped cpgs file
     let mut nuc_index: HashMap<usize, Vec<(usize, String, String)>> = HashMap::new();
