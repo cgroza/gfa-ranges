@@ -61,9 +61,9 @@ fn main() {
     });
 
     reader.lines()
+        .par_bridge()
         .filter_map(Result::ok)
         .filter(|l| l.starts_with('P'))
-        .par_bridge()
         .for_each(|line| {
             let tx_ = tx.clone();
             let fields: Vec<&str> = line.trim().split_whitespace().collect();
